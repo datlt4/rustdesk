@@ -40,8 +40,14 @@ Future<void> exportBackup() async {
 }
 
 Future<void> importBackup() async {
-  final picked =
-      await FilePicker.platform.pickFiles(type: FileType.any, withData: true);
+  final FilePickerResult? picked;
+  try {
+    picked =
+        await FilePicker.platform.pickFiles(type: FileType.any, withData: true);
+  } catch (e) {
+    showToast('$e');
+    return;
+  }
   final bytes = picked?.files.single.bytes;
   if (bytes == null) return;
   final res = await bind.mainGetCommon(
