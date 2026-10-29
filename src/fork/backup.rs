@@ -1,4 +1,5 @@
-//! Export / import of peers, settings and server profiles, without any password.
+//! Export / import of peers (with saved passwords), settings and server profiles.
+//! The device's own permanent password is not included: only a machine-encrypted hash of it exists.
 use hbb_common::{
     config::{self, Config, LocalConfig, PeerConfig},
     ResultType,
@@ -35,14 +36,6 @@ struct PeerBackup {
     config: String,
 }
 
-fn is_secret(key: &str) -> bool {
-    key.contains("password")
-}
-
-fn without_secrets(map: HashMap<String, String>) -> HashMap<String, String> {
-    map.into_iter().filter(|(k, _)| !is_secret(k)).collect()
-}
-
 fn local_file() -> std::path::PathBuf {
     Config::path(format!("{}_local.toml", crate::get_app_name()))
 }
@@ -50,14 +43,11 @@ fn local_file() -> std::path::PathBuf {
 pub fn export() -> ResultType<String> {
     let options: HashMap<String, String> =
         serde_json::from_str(&crate::ui_interface::get_options())?;
-    let mut local: LocalBackup = config::load_path(local_file());
-    local.options = without_secrets(local.options);
+    let local: LocalBackup = config::load_path(local_file());
     let peers = PeerConfig::peers(None)
         .into_iter()
         .map(|(id, _, mut c)| -> ResultType<PeerBackup> {
-            c.password = Vec::new();
             c.trusted_device_v2 = String::new();
-            c.options = without_secrets(c.options);
             Ok(PeerBackup {
                 id,
                 config: hbb_common::toml::to_string(&c)?,
@@ -67,14 +57,14 @@ pub fn export() -> ResultType<String> {
     let backup = Backup {
         format: FORMAT.to_owned(),
         version: 1,
-        options: without_secrets(options),
+        options,
         local,
         peers,
     };
     Ok(serde_json::to_string_pretty(&backup)?)
 }
 
-/// Merges a backup into the current settings; saved peer passwords on this device are kept.
+/// Merges a backup into the current settings; peers that already exist here are left as they are.
 pub fn import(json: &str) -> ResultType<()> {
     let backup: Backup = serde_json::from_str(json)?;
     if backup.format != FORMAT {
@@ -82,10 +72,10 @@ pub fn import(json: &str) -> ResultType<()> {
     }
     let mut options: HashMap<String, String> =
         serde_json::from_str(&crate::ui_interface::get_options())?;
-    options.extend(without_secrets(backup.options));
+    options.extend(backup.options);
     crate::ui_interface::set_options(options);
 
-    for (k, v) in without_secrets(backup.local.options) {
+    for (k, v) in backup.local.options {
         LocalConfig::set_option(k, v);
     }
     for (k, v) in backup.local.ui_flutter {
@@ -100,12 +90,10 @@ pub fn import(json: &str) -> ResultType<()> {
     LocalConfig::set_fav(fav);
 
     for p in backup.peers {
-        let mut c: PeerConfig = hbb_common::toml::from_str(&p.config)?;
-        let old = PeerConfig::load(&p.id);
-        c.password = old.password;
-        c.trusted_device_v2 = old.trusted_device_v2;
-        c.options = without_secrets(c.options);
-        c.options.extend(old.options.into_iter().filter(|(k, _)| is_secret(k)));
+        if PeerConfig::exists(&p.id) {
+            continue;
+        }
+        let c: PeerConfig = hbb_common::toml::from_str(&p.config)?;
         c.store(&p.id);
     }
     Ok(())

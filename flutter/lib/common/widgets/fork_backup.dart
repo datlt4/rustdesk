@@ -1,4 +1,4 @@
-// Fork: export / import peers, settings and server profiles (no passwords) as one JSON file.
+// Fork: export / import peers (with saved passwords), settings and server profiles as one JSON file.
 import 'dart:convert';
 import 'dart:io';
 

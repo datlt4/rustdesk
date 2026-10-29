@@ -148,21 +148,48 @@ void showServerSettingsWithValue(
     Widget buildProfileRow() {
       final row = Row(
         children: [
+          // DropdownButton opens a route, which renders below this overlay-entry dialog.
           Expanded(
-            child: DropdownButton<int>(
-              isExpanded: true,
-              value: selectedProfile,
-              hint: Text('-'),
-              items: [
-                DropdownMenuItem(
-                    value: -1, child: Text(translate('Default'))),
-                for (var i = 0; i < profiles.length; i++)
-                  DropdownMenuItem(
-                      value: i,
-                      child: Text(profiles[i].$1,
-                          overflow: TextOverflow.ellipsis)),
-              ],
-              onChanged: selectProfile,
+            child: LayoutBuilder(
+              builder: (context, constraints) => MenuAnchor(
+                menuChildren: [
+                  for (var i = -1; i < profiles.length; i++)
+                    MenuItemButton(
+                      onPressed: () => selectProfile(i),
+                      child: SizedBox(
+                          width: constraints.maxWidth - 24,
+                          child: Text(
+                              i < 0 ? translate('Default') : profiles[i].$1,
+                              overflow: TextOverflow.ellipsis)),
+                    ),
+                ],
+                builder: (context, controller, _) => InkWell(
+                  onTap: () => controller.isOpen
+                      ? controller.close()
+                      : controller.open(),
+                  child: Container(
+                    height: 48,
+                    decoration: BoxDecoration(
+                        border: Border(
+                            bottom: BorderSide(
+                                color: Theme.of(context).dividerColor))),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                              selectedProfile == null
+                                  ? '-'
+                                  : selectedProfile! < 0
+                                      ? translate('Default')
+                                      : profiles[selectedProfile!].$1,
+                              overflow: TextOverflow.ellipsis),
+                        ),
+                        Icon(Icons.arrow_drop_down),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
             ),
           ),
           Tooltip(
@@ -270,30 +297,31 @@ void showServerSettingsWithValue(
                         relayServerMsg.value),
                     SizedBox(height: 8),
                   ],
-                  buildField(
-                    translate('API Server'),
-                    apiCtrl,
-                    apiServerMsg.value,
-                    validator: (v) {
-                      if (v != null && v.isNotEmpty) {
-                        if (!(v.startsWith('http://') ||
-                            v.startsWith("https://"))) {
-                          return translate("invalid_http");
-                        }
-                      }
-                      return null;
-                    },
-                  ),
-                  Padding(
-                    padding: EdgeInsetsDirectional.only(
-                      start: isDesktop || isWeb ? labelWidth + labelSpacing : 0,
-                    ),
-                    child: ApiServerWarning(
-                      controller: apiCtrl,
-                      idController: idCtrl,
-                      message: translate('api_server_connection_tip'),
-                      emptyMessage: translate('api_server_empty_tip'),
-                    ),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: buildField(
+                          translate('API Server'),
+                          apiCtrl,
+                          apiServerMsg.value,
+                          validator: (v) {
+                            if (v != null && v.isNotEmpty) {
+                              if (!(v.startsWith('http://') ||
+                                  v.startsWith("https://"))) {
+                                return translate("invalid_http");
+                              }
+                            }
+                            return null;
+                          },
+                        ),
+                      ),
+                      ApiServerWarning(
+                        controller: apiCtrl,
+                        idController: idCtrl,
+                        message: translate('api_server_connection_tip'),
+                        emptyMessage: translate('api_server_empty_tip'),
+                      ),
+                    ],
                   ),
                   SizedBox(height: 8),
                   buildField('Key', keyCtrl, ''),

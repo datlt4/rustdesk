@@ -59,11 +59,11 @@ class ApiServerWarning extends StatelessWidget {
         if (!shouldWarnApiServer(effectiveApiServer)) {
           return const SizedBox.shrink();
         }
-        return Align(
-          alignment: AlignmentDirectional.centerStart,
-          child: Text(
-            controller.text.trim().isEmpty ? emptyMessage : message,
-            style: TextStyle(color: Colors.orange.shade700),
+        return Tooltip(
+          message: controller.text.trim().isEmpty ? emptyMessage : message,
+          child: Padding(
+            padding: const EdgeInsetsDirectional.only(start: 8),
+            child: Icon(Icons.error_outline, color: Colors.orange.shade700),
           ),
         );
       },

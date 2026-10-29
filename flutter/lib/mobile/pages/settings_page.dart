@@ -1082,6 +1082,19 @@ class _SettingsState extends State<SettingsPage> with WidgetsBindingObserver {
                 ),
                 leading: Icon(Icons.info)),
             SettingsTile(
+                onPressed: (context) async {
+                  await launchUrl(Uri.parse(kForkReleasesUrl));
+                },
+                title: Text('Unofficial fork by datlt4'),
+                value: Padding(
+                  padding: EdgeInsets.symmetric(vertical: 8),
+                  child: Text('github.com/datlt4/rustdesk',
+                      style: TextStyle(
+                        decoration: TextDecoration.underline,
+                      )),
+                ),
+                leading: Icon(Icons.call_split)),
+            SettingsTile(
                 title: Text(translate("Build Date")),
                 value: Padding(
                   padding: EdgeInsets.symmetric(vertical: 8),

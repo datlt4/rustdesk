@@ -35,19 +35,19 @@ void main() {
             api.isNotEmpty ? api : 'http://$custom',
       ),
     ));
-    expect(find.text('Default HTTP warning'), findsOneWidget);
+    expect(find.byTooltip('Default HTTP warning'), findsOneWidget);
 
     id.text = 'localhost';
     await tester.pump();
-    expect(find.text('Default HTTP warning'), findsNothing);
+    expect(find.byTooltip('Default HTTP warning'), findsNothing);
 
     api.text = 'http://api.example.com';
     await tester.pump();
-    expect(find.text('HTTP warning'), findsOneWidget);
+    expect(find.byTooltip('HTTP warning'), findsOneWidget);
 
     api.text = 'https://api.example.com';
     await tester.pump();
-    expect(find.text('HTTP warning'), findsNothing);
+    expect(find.byTooltip('HTTP warning'), findsNothing);
   });
 
   testWidgets('resolver failures are reported without breaking the server form',
@@ -74,7 +74,7 @@ void main() {
     ));
     expect(tester.takeException(), isA<FormatException>());
     expect(find.byType(ErrorWidget), findsNothing);
-    expect(find.text('Default HTTP warning'), findsNothing);
+    expect(find.byTooltip('Default HTTP warning'), findsNothing);
     expect(find.byType(TextField), findsOneWidget);
   });
 }
