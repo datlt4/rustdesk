@@ -13,6 +13,7 @@ import 'package:url_launcher/url_launcher_string.dart';
 
 import '../../common.dart';
 import '../../common/widgets/dialog.dart';
+import '../../common/widgets/fork_backup.dart';
 import '../../common/widgets/login.dart';
 import '../../consts.dart';
 import '../../models/model.dart';
@@ -776,6 +777,14 @@ class _SettingsState extends State<SettingsPage> with WidgetsBindingObserver {
                     setState(callback);
                   });
                 }),
+          SettingsTile(
+              title: Text(translate('Export backup')),
+              leading: Icon(Icons.upload_file),
+              onPressed: (context) => exportBackup()),
+          SettingsTile(
+              title: Text(translate('Import backup')),
+              leading: Icon(Icons.restore),
+              onPressed: (context) => importBackup()),
           if (!_hideNetwork && !_hideProxy)
             SettingsTile(
                 title: Text(translate('Socks5/Http(s) Proxy')),

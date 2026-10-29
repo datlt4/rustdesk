@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_hbb/common.dart';
 import 'package:flutter_hbb/common/widgets/audio_input.dart';
+import 'package:flutter_hbb/common/widgets/fork_backup.dart';
 import 'package:flutter_hbb/common/widgets/setting_widgets.dart';
 import 'package:flutter_hbb/consts.dart';
 import 'package:flutter_hbb/desktop/pages/desktop_home_page.dart';
@@ -423,6 +424,13 @@ class _GeneralState extends State<_General> {
         if (!isWeb) record(context),
         if (!isWeb) WaylandCard(),
         other(),
+        if (!isWeb)
+          _Card(title: 'Backup', children: [
+            Row(children: [
+              _Button('Export backup', exportBackup),
+              _Button('Import backup', importBackup),
+            ]),
+          ]),
         if (!bind.isIncomingOnly()) keyboardShortcuts(),
       ],
     ).marginOnly(bottom: _kListViewBottomMargin);

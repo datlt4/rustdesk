@@ -2,6 +2,8 @@
 use hbb_common::{anyhow::anyhow, bytes::Bytes, log, ResultType};
 use serde_json::Value;
 
+pub mod backup;
+
 pub const OWNER: &str = "datlt4";
 pub const LATEST_RELEASE_API: &str = "https://api.github.com/repos/datlt4/rustdesk/releases/latest";
 const UPSTREAM_LATEST_RELEASE_API: &str =
@@ -13,6 +15,18 @@ pub const USER_AGENT: &str = "RustDesk";
 /// Peers and the rendezvous server get this instead of the fork version, since
 /// get_version_number reads 1.5.101 as 1.6.10 and peers would expect newer features.
 pub const UPSTREAM_VERSION: &str = "1.5.1";
+
+/// `mainGetCommon` keys handled by the fork; errors come back as `error:<message>`.
+pub fn get_common(key: &str) -> Option<String> {
+    let res = if key == "fork-export-backup" {
+        backup::export()
+    } else if let Some(json) = key.strip_prefix("fork-import-backup:") {
+        backup::import(json).map(|_| String::new())
+    } else {
+        return None;
+    };
+    Some(res.unwrap_or_else(|e| format!("error:{e}")))
+}
 
 /// Turns GitHub's latest-release JSON into the `{"url": <release page>}` the update check expects.
 pub fn to_version_check_response(bytes: Bytes) -> ResultType<Bytes> {

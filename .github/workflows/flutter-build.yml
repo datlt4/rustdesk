@@ -829,6 +829,23 @@ jobs:
           # for easy debugging
           flutter build ipa --release --no-codesign
 
+      # Fork: unsigned IPA that the Mac's ipa-resign job signs and installs.
+      - name: Package unsigned ipa
+        if: env.UPLOAD_ARTIFACT == 'true'
+        shell: bash
+        run: |
+          mkdir -p Payload
+          cp -R flutter/build/ios/archive/Runner.xcarchive/Products/Applications/*.app Payload/
+          zip -qry rustdesk-${{ env.VERSION }}-ios-unsigned.ipa Payload
+
+      - name: Publish unsigned ipa
+        if: env.UPLOAD_ARTIFACT == 'true'
+        uses: softprops/action-gh-release@de2c0eb89ae2a093876385947365aca7b0e5f844 # v1
+        with:
+          prerelease: true
+          tag_name: ${{ env.TAG_NAME }}
+          files: rustdesk-${{ env.VERSION }}-ios-unsigned.ipa
+
       # - name: Upload Artifacts
       #   # if: env.ANDROID_SIGNING_KEY != null && env.UPLOAD_ARTIFACT == 'true'
       #   uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
