@@ -6,7 +6,7 @@ use hbb_common::{
 use serde_derive::{Deserialize, Serialize};
 use std::collections::HashMap;
 
-const FORMAT: &str = "ruskdesk-backup";
+const FORMAT: &str = "rustdesk-backup";
 
 #[derive(Serialize, Deserialize)]
 struct Backup {

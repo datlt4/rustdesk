@@ -15,7 +15,7 @@ Future<void> exportBackup() async {
     return;
   }
   final date = DateTime.now().toIso8601String().substring(0, 10);
-  final name = 'ruskdesk-backup-$date.json';
+  final name = 'rustdesk-backup-$date.json';
   if (isDesktop) {
     final path = await FilePicker.platform.saveFile(
         fileName: name, type: FileType.custom, allowedExtensions: ['json']);
