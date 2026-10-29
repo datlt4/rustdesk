@@ -26,6 +26,8 @@ class StateGlobal {
   final isPortrait = false.obs;
 
   final updateUrl = ''.obs;
+  // Newer rustdesk/rustdesk release than the fork is synced to.
+  final upstreamUpdateVersion = ''.obs;
 
   String _inputSource = '';
 

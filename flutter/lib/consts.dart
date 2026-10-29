@@ -722,3 +722,5 @@ extension WindowsTargetExt on int {
 }
 
 const kCheckSoftwareUpdateFinish = 'check_software_update_finish';
+const kCheckUpstreamUpdateFinish = 'check_upstream_update_finish';
+const kForkReleasesUrl = 'https://github.com/datlt4/rustdesk/releases';

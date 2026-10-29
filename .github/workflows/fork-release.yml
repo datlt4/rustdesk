@@ -1,0 +1,107 @@
+name: Fork Release
+
+# Merging into master publishes Cargo.toml's version once: every OS from flutter-build.yml,
+# then the signed rustdesk-update.json the in-app updater reads, then the release goes "latest".
+# Bump the version (res/fork/set-version.sh) before merging, or nothing is released.
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: fork-release
+  cancel-in-progress: false
+
+jobs:
+  prepare:
+    if: github.repository == 'datlt4/rustdesk'
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.v.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: v
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG=$(sed -n 's/^version = "\(.*\)"/\1/p' Cargo.toml | head -1)
+          if gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$TAG" >/dev/null 2>&1; then
+            echo "::notice::$TAG already released; bump the version to publish a new one"
+          else
+            echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          fi
+
+  build:
+    needs: prepare
+    if: needs.prepare.outputs.tag
+    uses: ./.github/workflows/flutter-build.yml
+    secrets: inherit
+    with:
+      upload-artifact: true
+      upload-tag: ${{ needs.prepare.outputs.tag }}
+
+  publish:
+    needs: [prepare, build]
+    # Some upstream jobs (iOS, flatpak, ...) may fail on the fork; publish what was built.
+    if: ${{ !cancelled() && needs.prepare.outputs.tag }}
+    runs-on: ubuntu-22.04
+    env:
+      TAG: ${{ needs.prepare.outputs.tag }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: 'python -m pip install --only-binary=:all: --require-hashes -r res/update/update_metadata_requirements.txt'
+
+      - name: Download installers
+        run: |
+          gh release download "$TAG" -R "$GITHUB_REPOSITORY" -D artifacts \
+            -p "rustdesk-$TAG-*.exe" -p "rustdesk-$TAG-*.msi" -p "rustdesk-$TAG-*.dmg" \
+            -p "rustdesk-$TAG-*.deb" -p "rustdesk-$TAG-*.rpm" -p "rustdesk-$TAG-*.AppImage"
+          ls -l artifacts
+
+      - name: Sign update metadata
+        env:
+          RUSTDESK_UPDATE_ED25519_SEED: ${{ secrets.RUSTDESK_UPDATE_ED25519_SEED }}
+        run: |
+          args=()
+          add() {
+            if [ -f "artifacts/$4" ]; then
+              args+=(--artifact "$1" "$2" "$3" "artifacts/$4")
+            else
+              echo "::warning::$4 was not built; that platform gets no update"
+            fi
+          }
+          add windows x86_64 exe "rustdesk-$TAG-x86_64.exe"
+          add windows x86_64 msi "rustdesk-$TAG-x86_64.msi"
+          add windows aarch64 exe "rustdesk-$TAG-aarch64.exe"
+          add windows aarch64 msi "rustdesk-$TAG-aarch64.msi"
+          add windows x86 exe "rustdesk-$TAG-x86-sciter.exe"
+          add macos aarch64 dmg "rustdesk-$TAG-aarch64.dmg"
+          add macos x86_64 dmg "rustdesk-$TAG-x86_64.dmg"
+          add linux x86_64 deb "rustdesk-$TAG-x86_64.deb"
+          add linux aarch64 deb "rustdesk-$TAG-aarch64.deb"
+          add linux x86_64 rpm "rustdesk-$TAG-0.x86_64.rpm"
+          add linux aarch64 rpm "rustdesk-$TAG-0.aarch64.rpm"
+          add linux x86_64 appimage "rustdesk-$TAG-x86_64.AppImage"
+          add linux aarch64 appimage "rustdesk-$TAG-aarch64.AppImage"
+          python res/update/generate_update_metadata.py sign "${args[@]}" \
+            --version "$TAG" --release-id "$TAG" \
+            --package-id rustdesk \
+            --release-base-url "https://github.com/$GITHUB_REPOSITORY/releases/download" \
+            --published-at "$(git log -1 --format=%cI)" \
+            --metadata-out ./rustdesk-update.json \
+            --signature-out ./rustdesk-update.json.sig
+
+      # Clients find a release through /releases/latest, so mark it latest only after the metadata is up.
+      - name: Upload metadata and publish the release
+        run: |
+          gh release upload "$TAG" rustdesk-update.json.sig rustdesk-update.json --clobber -R "$GITHUB_REPOSITORY"
+          gh release edit "$TAG" --prerelease=false --latest -R "$GITHUB_REPOSITORY"

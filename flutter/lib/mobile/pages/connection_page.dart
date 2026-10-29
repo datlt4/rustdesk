@@ -86,6 +86,9 @@ class _ConnectionPageState extends State<ConnectionPage> {
             delegate: SliverChildListDelegate([
           if (!bind.isCustomClient() && !isIOS)
             Obx(() => _buildUpdateUI(stateGlobal.updateUrl.value)),
+          if (!bind.isCustomClient())
+            Obx(() => _buildUpstreamUpdateUI(
+                stateGlobal.upstreamUpdateVersion.value)),
           _buildRemoteIDTextField(),
         ])),
         SliverFillRemaining(
@@ -124,7 +127,11 @@ class _ConnectionPageState extends State<ConnectionPage> {
         ? const SizedBox(height: 0)
         : InkWell(
             onTap: () async {
-              final url = 'https://rustdesk.com/download';
+              // Direct APK download, like the fork's other apps; iOS has no build.
+              final version = updateUrl.split('/').last;
+              final url = isAndroid
+                  ? '${updateUrl.replaceFirst('/releases/tag/', '/releases/download/')}/rustdesk-$version-universal-signed.apk'
+                  : updateUrl;
               // https://pub.dev/packages/url_launcher#configuration
               // https://developer.android.com/training/package-visibility/use-cases#open-urls-custom-tabs
               //
@@ -143,6 +150,20 @@ class _ConnectionPageState extends State<ConnectionPage> {
                 child: Text(translate('Download new version'),
                     style: const TextStyle(
                         color: Colors.white, fontWeight: FontWeight.bold))));
+  }
+
+  Widget _buildUpstreamUpdateUI(String version) {
+    if (version.isEmpty) return const SizedBox(height: 0);
+    return InkWell(
+        onTap: () => launchUrl(Uri.parse(
+            'https://github.com/rustdesk/rustdesk/releases/tag/$version')),
+        child: Container(
+            alignment: AlignmentDirectional.center,
+            width: double.infinity,
+            color: Colors.blueGrey,
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: Text('RustDesk upstream $version is available',
+                style: const TextStyle(color: Colors.white))));
   }
 
   /// UI for the remote ID TextField.

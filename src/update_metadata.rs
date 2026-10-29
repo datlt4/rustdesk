@@ -27,12 +27,13 @@ const METADATA_SCHEMA_VERSION: u32 = 1;
 const SIGNATURE_SCHEMA_VERSION: u32 = 1;
 const SIGNATURE_ALGORITHM: &str = "ed25519";
 
+// Fork key (datlt4/rustdesk); the seed is the RUSTDESK_UPDATE_ED25519_SEED secret.
 const TRUSTED_UPDATE_KEYS: &[TrustedUpdateKey] = &[TrustedUpdateKey {
     key_id: "2026-ed25519-main",
     algorithm: SIGNATURE_ALGORITHM,
     public_key: [
-        118, 252, 116, 215, 49, 217, 220, 109, 145, 119, 210, 101, 225, 198, 63, 2, 41, 127, 197,
-        127, 52, 251, 6, 204, 125, 117, 96, 204, 187, 166, 85, 59,
+        180, 133, 6, 14, 15, 195, 21, 30, 50, 229, 66, 253, 114, 189, 76, 161, 209, 163, 53, 201,
+        194, 88, 5, 144, 165, 116, 62, 20, 67, 170, 43, 83,
     ],
 }];
 

@@ -4075,6 +4075,13 @@ void checkUpdate() {
           stateGlobal.updateUrl.value = evt['url'];
         }
       });
+      platformFFI.registerEventHandler(
+          kCheckUpstreamUpdateFinish, kCheckUpstreamUpdateFinish,
+          (Map<String, dynamic> evt) async {
+        if (evt['version'] is String) {
+          stateGlobal.upstreamUpdateVersion.value = evt['version'];
+        }
+      });
       Timer(const Duration(seconds: 1), () async {
         bind.mainGetSoftwareUpdateUrl();
       });

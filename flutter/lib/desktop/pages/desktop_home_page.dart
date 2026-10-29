@@ -432,10 +432,11 @@ class _DesktopHomePageState extends State<DesktopHomePage>
         updateUrl.isNotEmpty &&
         !isCardClosed &&
         bind.mainUriPrefixSync().contains('rustdesk')) {
-      final isToUpdate = (isWindows || isMacOS) && bind.mainIsInstalled();
+      final isToUpdate =
+          ((isWindows || isMacOS) && bind.mainIsInstalled()) || isLinux;
       String btnText = isToUpdate ? 'Update' : 'Download';
       GestureTapCallback onPressed = () async {
-        final Uri url = Uri.parse('https://rustdesk.com/download');
+        final Uri url = Uri.parse(kForkReleasesUrl);
         await launchUrl(url);
       };
       if (isToUpdate) {
@@ -450,9 +451,18 @@ class _DesktopHomePageState extends State<DesktopHomePage>
           onPressed,
           closeButton: true,
           help: isToUpdate ? 'Changelog' : null,
-          link: isToUpdate
-              ? 'https://github.com/rustdesk/rustdesk/releases/tag/${bind.mainGetNewVersion()}'
-              : null);
+          link: isToUpdate ? updateUrl : null);
+    }
+    final upstreamVersion = stateGlobal.upstreamUpdateVersion.value;
+    if (upstreamVersion.isNotEmpty && !isCardClosed) {
+      final upstreamUrl =
+          'https://github.com/rustdesk/rustdesk/releases/tag/$upstreamVersion';
+      return buildInstallCard(
+          "Status",
+          "RustDesk upstream $upstreamVersion is available, sync the fork to get it.",
+          'Changelog',
+          () => launchUrl(Uri.parse(upstreamUrl)),
+          closeButton: true);
     }
     if (systemError.isNotEmpty) {
       return buildInstallCard("", systemError, "", () {});

@@ -1050,6 +1050,7 @@ pub fn check_software_update() {
     let opt = LocalConfig::get_option(keys::OPTION_ENABLE_CHECK_UPDATE);
     if config::option2bool(keys::OPTION_ENABLE_CHECK_UPDATE, &opt) {
         std::thread::spawn(move || allow_err!(do_check_software_update()));
+        crate::fork::check_upstream_release();
     }
 }
 
@@ -1083,8 +1084,12 @@ pub(crate) fn release_id_from_update_url(update_url: &str) -> ResultType<String>
     };
     let segments = segments.collect::<Vec<_>>();
     let release_id = match segments.as_slice() {
-        ["rustdesk", "rustdesk", "releases", "tag", release_id] => *release_id,
-        ["rustdesk", "rustdesk", "releases", "tag", release_id, ""] => *release_id,
+        [owner, "rustdesk", "releases", "tag", release_id] if *owner == crate::fork::OWNER => {
+            *release_id
+        }
+        [owner, "rustdesk", "releases", "tag", release_id, ""] if *owner == crate::fork::OWNER => {
+            *release_id
+        }
         _ => bail!(
             "Update URL is not a RustDesk release tag URL: {}",
             update_url
@@ -1160,25 +1165,33 @@ fn process_software_update_check_response(bytes: Bytes) -> ResultType<()> {
 }
 
 // No need to check `danger_accept_invalid_cert` for now.
-// Because the url is always `https://api.rustdesk.com/version/latest`.
+// Because the url is always the fork's GitHub latest-release API.
 #[tokio::main(flavor = "current_thread")]
 pub async fn do_check_software_update() -> hbb_common::ResultType<()> {
-    let (request, url) =
-        hbb_common::version_check_request(hbb_common::VER_TYPE_RUSTDESK_CLIENT.to_string());
+    let url = crate::fork::LATEST_RELEASE_API.to_owned();
     let proxy_conf = Config::get_socks();
     let tls_url = get_url_for_tls(&url, &proxy_conf);
     let tls_type = get_cached_tls_type(tls_url);
     let is_tls_not_cached = tls_type.is_none();
     let tls_type = tls_type.unwrap_or(TlsType::Rustls);
     let client = create_http_client_async(tls_type, false);
-    let latest_release_response: ResultType<_> = match client.post(&url).json(&request).send().await
+    let latest_release_response: ResultType<_> = match client
+        .get(&url)
+        .header("User-Agent", crate::fork::USER_AGENT)
+        .send()
+        .await
     {
         Ok(resp) => Ok((tls_type, resp)),
         Err(err) => {
             if is_tls_not_cached && err.is_request() {
                 let tls_type = TlsType::NativeTls;
                 let client = create_http_client_async(tls_type, false);
-                match client.post(&url).json(&request).send().await {
+                match client
+                    .get(&url)
+                    .header("User-Agent", crate::fork::USER_AGENT)
+                    .send()
+                    .await
+                {
                     Ok(resp) => Ok((tls_type, resp)),
                     Err(err) => Err(err.into()),
                 }
@@ -1201,7 +1214,9 @@ pub async fn do_check_software_update() -> hbb_common::ResultType<()> {
         }
         Err(err) => Err(err),
     };
-    let result = response_bytes.and_then(process_software_update_check_response);
+    let result = response_bytes
+        .and_then(crate::fork::to_version_check_response)
+        .and_then(process_software_update_check_response);
     if result.is_err() {
         clear_software_update_url();
     }
@@ -3091,7 +3106,7 @@ mod tests {
 
     #[test]
     fn parses_stable_rustdesk_release_url() {
-        let update_url = "https://github.com/rustdesk/rustdesk/releases/tag/v1.4.6";
+        let update_url = "https://github.com/datlt4/rustdesk/releases/tag/v1.4.6";
 
         assert_eq!(release_id_from_update_url(update_url).unwrap(), "v1.4.6");
         assert_eq!(display_version_from_release_id("v1.4.6").unwrap(), "1.4.6");

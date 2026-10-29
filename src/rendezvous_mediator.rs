@@ -725,7 +725,7 @@ impl RendezvousMediator {
         let mut msg_out = Message::new();
         let mut rr = RelayResponse {
             socket_addr: socket_addr.into(),
-            version: crate::VERSION.to_owned(),
+            version: crate::fork::UPSTREAM_VERSION.to_owned(),
             socket_addr_v6,
             webrtc_sdp_answer,
             ..Default::default()
@@ -839,7 +839,7 @@ impl RendezvousMediator {
             socket_addr: AddrMangle::encode(peer_addr).into(),
             local_addr: AddrMangle::encode(local_addr).into(),
             relay_server,
-            version: crate::VERSION.to_owned(),
+            version: crate::fork::UPSTREAM_VERSION.to_owned(),
             socket_addr_v6,
             ..Default::default()
         });
@@ -1137,7 +1137,7 @@ impl RendezvousMediator {
             id: Config::get_id(),
             relay_server,
             nat_type: nat_type.into(),
-            version: crate::VERSION.to_owned(),
+            version: crate::fork::UPSTREAM_VERSION.to_owned(),
             socket_addr_v6,
             webrtc_sdp_answer,
             ..Default::default()
