@@ -14,6 +14,7 @@ import 'package:url_launcher/url_launcher_string.dart';
 import '../../common.dart';
 import '../../common/widgets/dialog.dart';
 import '../../common/widgets/fork_backup.dart';
+import '../../common/widgets/fork_update.dart';
 import '../../common/widgets/login.dart';
 import '../../consts.dart';
 import '../../models/model.dart';
@@ -662,6 +663,10 @@ class _SettingsState extends State<SettingsPage> with WidgetsBindingObserver {
           },
         ),
       );
+      enhancementsTiles.add(SettingsTile(
+          title: Text(translate('Check for updates')),
+          leading: Icon(Icons.system_update),
+          onPressed: (context) => checkForUpdates()));
     }
 
     enhancementsTiles.add(

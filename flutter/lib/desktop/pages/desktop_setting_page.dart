@@ -8,6 +8,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_hbb/common.dart';
 import 'package:flutter_hbb/common/widgets/audio_input.dart';
 import 'package:flutter_hbb/common/widgets/fork_backup.dart';
+import 'package:flutter_hbb/common/widgets/fork_update.dart';
 import 'package:flutter_hbb/common/widgets/setting_widgets.dart';
 import 'package:flutter_hbb/consts.dart';
 import 'package:flutter_hbb/desktop/pages/desktop_home_page.dart';
@@ -608,6 +609,8 @@ class _GeneralState extends State<_General> {
           kOptionEnableCheckUpdate,
           isServer: false,
         ),
+      if (!isWeb && !bind.isCustomClient())
+        _Button('Check for updates', checkForUpdates),
       if (showAutoUpdate)
         _OptionCheckBox(
           context,

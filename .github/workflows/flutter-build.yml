@@ -48,7 +48,7 @@ env:
   VCPKG_COMMIT_ID: "9e593bb18ea69cc5095e012465dcd675a822ed0d"
   VCPKG_CMAKE_VERSION: "4.3.0"
   ARMV7_VCPKG_COMMIT_ID: "6f29f12e82a8293156836ad81cc9bf5af41fe836" # 2025.01.13, got "/opt/artifacts/vcpkg/vcpkg: No such file or directory" with latest version
-  VERSION: "1.5.104"
+  VERSION: "1.5.105"
   NDK_VERSION: "r28c"
   #signing keys env variable checks
   ANDROID_SIGNING_KEY: "${{ secrets.ANDROID_SIGNING_KEY }}"
@@ -1062,6 +1062,9 @@ jobs:
 
       - name: create unsigned dmg
         if: env.UPLOAD_ARTIFACT == 'true'
+        env:
+          FORK_MACOS_CODESIGN_P12: ${{ secrets.FORK_MACOS_CODESIGN_P12 }}
+          FORK_MACOS_CODESIGN_PASSWORD: ${{ secrets.FORK_MACOS_CODESIGN_PASSWORD }}
         run: |
           CREATE_DMG="$(command -v create-dmg)"
           CREATE_DMG="$(readlink -f "$CREATE_DMG")"
@@ -1069,8 +1072,26 @@ jobs:
           # Fork: no Developer ID; build.py adds Contents/MacOS/service after Xcode's ad-hoc
           # signature, which macOS then reports as "damaged". Re-seal it ad-hoc.
           if [ -z "$MACOS_P12_BASE64" ]; then
-            codesign --force --deep -s - ./flutter/build/macos/Build/Products/Release/RustDesk.app
-            codesign --verify --deep --strict -v ./flutter/build/macos/Build/Products/Release/RustDesk.app
+            APP=./flutter/build/macos/Build/Products/Release/RustDesk.app
+            IDENTITY=-
+            # A fixed self-signed identity keeps the designated requirement stable across
+            # releases, so macOS keeps the Screen Recording / Accessibility grants.
+            if [ -n "$FORK_MACOS_CODESIGN_P12" ]; then
+              KC="$RUNNER_TEMP/fork-codesign.keychain-db"
+              echo "$FORK_MACOS_CODESIGN_P12" | base64 --decode > "$RUNNER_TEMP/fork-codesign.p12"
+              security create-keychain -p "$FORK_MACOS_CODESIGN_PASSWORD" "$KC"
+              security set-keychain-settings "$KC"
+              security unlock-keychain -p "$FORK_MACOS_CODESIGN_PASSWORD" "$KC"
+              security import "$RUNNER_TEMP/fork-codesign.p12" -k "$KC" -P "$FORK_MACOS_CODESIGN_PASSWORD" -T /usr/bin/codesign
+              security set-key-partition-list -S apple-tool:,apple: -s -k "$FORK_MACOS_CODESIGN_PASSWORD" "$KC" >/dev/null
+              security list-keychains -d user -s "$KC" $(security list-keychains -d user | tr -d '"')
+              rm "$RUNNER_TEMP/fork-codesign.p12"
+              # Untrusted self-signed identities are only found by hash, not by name.
+              IDENTITY=$(security find-identity "$KC" | awk '/"RustDesk fork datlt4"/ {print $2; exit}')
+            fi
+            codesign --force --deep -s "$IDENTITY" "$APP"
+            codesign --verify --deep --strict -v "$APP"
+            codesign -d -r- "$APP"
           fi
           create-dmg --icon "RustDesk.app" 200 190 --hide-extension "RustDesk.app" --window-size 800 400 --app-drop-link 600 185 rustdesk-${{ env.VERSION }}-${{ matrix.job.arch }}.dmg ./flutter/build/macos/Build/Products/Release/RustDesk.app
 

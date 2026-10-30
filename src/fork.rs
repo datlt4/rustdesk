@@ -22,6 +22,8 @@ pub fn get_common(key: &str) -> Option<String> {
         backup::export()
     } else if let Some(json) = key.strip_prefix("fork-import-backup:") {
         backup::import(json).map(|_| String::new())
+    } else if key == "fork-check-update" {
+        check_update_now()
     } else {
         return None;
     };
@@ -35,6 +37,17 @@ pub fn to_version_check_response(bytes: Bytes) -> ResultType<Bytes> {
         .as_str()
         .ok_or_else(|| anyhow!("GitHub release has no html_url"))?;
     Ok(Bytes::from(serde_json::json!({ "url": url }).to_string()))
+}
+
+/// Manual "Check for updates": runs the startup check regardless of its option and returns the
+/// release page of a newer fork version, or "" when this one is the latest.
+fn check_update_now() -> ResultType<String> {
+    // do_check_software_update builds its own runtime, so keep it off the caller's thread.
+    std::thread::spawn(crate::common::do_check_software_update)
+        .join()
+        .map_err(|_| anyhow!("update check panicked"))??;
+    check_upstream_release();
+    Ok(crate::common::SOFTWARE_UPDATE_URL.lock().unwrap().clone())
 }
 
 pub fn check_upstream_release() {
