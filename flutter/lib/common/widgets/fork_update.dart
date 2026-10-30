@@ -14,3 +14,10 @@ Future<void> checkForUpdates() async {
       ? translate('You are using the latest version')
       : '${translate('New version available')}: ${url.split('/').last}');
 }
+
+/// Release tags pad the patch to 3 digits (2.0.1 -> 2.0.001); show the version the same way.
+String forkDisplayVersion(String v) =>
+    v.replaceFirstMapped(RegExp(r'\.(\d{1,2})$'), (m) => '.${m[1]!.padLeft(3, '0')}');
+
+/// Release assets keep the plain number (2.0.001 -> 2.0.1).
+String forkFileVersion(String tag) => tag.replaceFirst(RegExp(r'\.0+(?=\d+$)'), '.');

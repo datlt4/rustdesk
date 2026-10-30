@@ -17,6 +17,7 @@ import '../../consts.dart';
 import '../../models/model.dart';
 import '../../models/platform_model.dart';
 import 'home_page.dart';
+import 'package:flutter_hbb/common/widgets/fork_update.dart';
 
 /// Connection page for connecting to a remote peer.
 class ConnectionPage extends StatefulWidget implements PageShape {
@@ -130,7 +131,7 @@ class _ConnectionPageState extends State<ConnectionPage> {
               // Direct APK download, like the fork's other apps; iOS has no build.
               final version = updateUrl.split('/').last;
               final url = isAndroid
-                  ? '${updateUrl.replaceFirst('/releases/tag/', '/releases/download/')}/rustdesk-$version-universal-signed.apk'
+                  ? '${updateUrl.replaceFirst('/releases/tag/', '/releases/download/')}/rustdesk-${forkFileVersion(version)}-universal-signed.apk'
                   : updateUrl;
               // https://pub.dev/packages/url_launcher#configuration
               // https://developer.android.com/training/package-visibility/use-cases#open-urls-custom-tabs

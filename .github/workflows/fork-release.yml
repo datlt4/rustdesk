@@ -21,17 +21,21 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       tag: ${{ steps.v.outputs.tag }}
+      ver: ${{ steps.v.outputs.ver }}
     steps:
       - uses: actions/checkout@v4
       - id: v
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          TAG=$(sed -n 's/^version = "\(.*\)"/\1/p' Cargo.toml | head -1)
+          VER=$(sed -n 's/^version = "\(.*\)"/\1/p' Cargo.toml | head -1)
+          # Tags pad the patch to 3 digits (2.0.1 -> 2.0.001); files keep Cargo's number.
+          TAG=$(echo "$VER" | awk -F. '{printf "%d.%d.%03d", $1, $2, $3}')
           if gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$TAG" >/dev/null 2>&1; then
             echo "::notice::$TAG already released; bump the version to publish a new one"
           else
             echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+            echo "ver=$VER" >> "$GITHUB_OUTPUT"
           fi
 
   build:
@@ -50,6 +54,7 @@ jobs:
     runs-on: ubuntu-22.04
     env:
       TAG: ${{ needs.prepare.outputs.tag }}
+      VER: ${{ needs.prepare.outputs.ver }}
       GH_TOKEN: ${{ github.token }}
     steps:
       - uses: actions/checkout@v4
@@ -63,8 +68,8 @@ jobs:
       - name: Download installers
         run: |
           gh release download "$TAG" -R "$GITHUB_REPOSITORY" -D artifacts \
-            -p "rustdesk-$TAG-*.exe" -p "rustdesk-$TAG-*.msi" -p "rustdesk-$TAG-*.dmg" \
-            -p "rustdesk-$TAG-*.deb" -p "rustdesk-$TAG-*.rpm" -p "rustdesk-$TAG-*.AppImage"
+            -p "rustdesk-$VER-*.exe" -p "rustdesk-$VER-*.msi" -p "rustdesk-$VER-*.dmg" \
+            -p "rustdesk-$VER-*.deb" -p "rustdesk-$VER-*.rpm" -p "rustdesk-$VER-*.AppImage"
           ls -l artifacts
 
       - name: Sign update metadata
@@ -79,19 +84,19 @@ jobs:
               echo "::warning::$4 was not built; that platform gets no update"
             fi
           }
-          add windows x86_64 exe "rustdesk-$TAG-x86_64.exe"
-          add windows x86_64 msi "rustdesk-$TAG-x86_64.msi"
-          add windows aarch64 exe "rustdesk-$TAG-aarch64.exe"
-          add windows aarch64 msi "rustdesk-$TAG-aarch64.msi"
-          add windows x86 exe "rustdesk-$TAG-x86-sciter.exe"
-          add macos aarch64 dmg "rustdesk-$TAG-aarch64.dmg"
-          add macos x86_64 dmg "rustdesk-$TAG-x86_64.dmg"
-          add linux x86_64 deb "rustdesk-$TAG-x86_64.deb"
-          add linux aarch64 deb "rustdesk-$TAG-aarch64.deb"
-          add linux x86_64 rpm "rustdesk-$TAG-0.x86_64.rpm"
-          add linux aarch64 rpm "rustdesk-$TAG-0.aarch64.rpm"
-          add linux x86_64 appimage "rustdesk-$TAG-x86_64.AppImage"
-          add linux aarch64 appimage "rustdesk-$TAG-aarch64.AppImage"
+          add windows x86_64 exe "rustdesk-$VER-x86_64.exe"
+          add windows x86_64 msi "rustdesk-$VER-x86_64.msi"
+          add windows aarch64 exe "rustdesk-$VER-aarch64.exe"
+          add windows aarch64 msi "rustdesk-$VER-aarch64.msi"
+          add windows x86 exe "rustdesk-$VER-x86-sciter.exe"
+          add macos aarch64 dmg "rustdesk-$VER-aarch64.dmg"
+          add macos x86_64 dmg "rustdesk-$VER-x86_64.dmg"
+          add linux x86_64 deb "rustdesk-$VER-x86_64.deb"
+          add linux aarch64 deb "rustdesk-$VER-aarch64.deb"
+          add linux x86_64 rpm "rustdesk-$VER-0.x86_64.rpm"
+          add linux aarch64 rpm "rustdesk-$VER-0.aarch64.rpm"
+          add linux x86_64 appimage "rustdesk-$VER-x86_64.AppImage"
+          add linux aarch64 appimage "rustdesk-$VER-aarch64.AppImage"
           python res/update/generate_update_metadata.py sign "${args[@]}" \
             --version "$TAG" --release-id "$TAG" \
             --package-id rustdesk \

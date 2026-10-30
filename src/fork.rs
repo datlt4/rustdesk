@@ -93,6 +93,12 @@ fn notify_upstream_release() -> ResultType<()> {
 
 /// A release of the synced version counts only if it came out after this build,
 /// because the code is synced to upstream master before every fork release.
+/// Fork versions overflow get_version_number (1.5.201 > 1.6.1 there), so compare the parts.
+pub fn is_newer_release(latest: &str, current: &str) -> bool {
+    let parts = |v: &str| -> Vec<u64> { v.split('.').map(|x| x.parse().unwrap_or(0)).collect() };
+    parts(latest) > parts(current)
+}
+
 fn is_upstream_newer(version: &str, published_at: &str) -> bool {
     use hbb_common::get_version_number as n;
     let (v, base) = (n(version), n(UPSTREAM_VERSION));
@@ -192,6 +198,15 @@ mod tests {
         let out = to_version_check_response(Bytes::from_static(gh)).unwrap();
         let v: Value = serde_json::from_slice(&out).unwrap();
         assert_eq!(v["url"], "https://github.com/datlt4/rustdesk/releases/tag/1.5.102");
+    }
+
+    #[test]
+    fn newer_release_compares_parts() {
+        assert!(is_newer_release("1.6.001", "1.5.201"));
+        assert!(is_newer_release("1.5.201", "1.5.105"));
+        assert!(is_newer_release("2.0.001", "1.9.999"));
+        assert!(!is_newer_release("1.5.105", "1.5.105"));
+        assert!(!is_newer_release("1.5.104", "1.5.105"));
     }
 
     #[test]

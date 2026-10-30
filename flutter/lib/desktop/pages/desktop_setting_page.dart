@@ -2598,7 +2598,7 @@ class _AboutState extends State<_About> {
       };
     }(), hasData: (data) {
       final license = data['license'].toString();
-      final version = data['version'].toString();
+      final version = forkDisplayVersion(data['version'].toString());
       final buildDate = data['buildDate'].toString();
       final fingerprint = data['fingerprint'].toString();
       final myId = data['myId'].toString();

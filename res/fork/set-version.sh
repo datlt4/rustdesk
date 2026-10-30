@@ -6,6 +6,9 @@ v=${1:?usage: $0 MAJOR.MINOR.PATCH [UPSTREAM_VERSION]}
 up=${2:-}
 re='^([0-9]+)\.([0-9]+)\.([0-9]+)$'
 [[ $v =~ $re ]] || { echo "not X.Y.Z: $v" >&2; exit 1; }
+# The release tag may pad the patch (2.0.001); files carry the plain number (2.0.1).
+v="$((10#${BASH_REMATCH[1]})).$((10#${BASH_REMATCH[2]})).$((10#${BASH_REMATCH[3]}))"
+[[ $v =~ $re ]]
 # Android versionCode must grow with every release.
 code=$((BASH_REMATCH[1] * 1000000 + BASH_REMATCH[2] * 1000 + BASH_REMATCH[3]))
 cd "$(dirname "$0")/../.."

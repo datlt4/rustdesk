@@ -2,11 +2,15 @@
 
 ## Release
 1. Sync: `git fetch upstream && git rebase upstream/master` (on a branch, then merge into master).
-2. Bump: `res/fork/set-version.sh 1.5.105 [upstream-version]`. Pass the upstream version as the second argument whenever the sync moved it, and restart the count: upstream 1.5.2 -> `1.5.201 1.5.2`, 2.0.0 -> `2.0.1 2.0.0`.
+2. Bump: `res/fork/set-version.sh 1.5.105 [upstream-version]`. Pass the upstream version as the second argument whenever the sync moved it, and restart the count: upstream 1.5.2 -> `1.5.201 1.5.2`, 2.0.0 -> `2.0.001 2.0.0`.
 3. Merge into master. `.github/workflows/fork-release.yml` builds every OS with `flutter-build.yml`,
    signs `rustdesk-update.json`, and marks the release latest. A version that already has a tag is skipped.
 
-Versions: `MAJOR.MINOR` follow upstream; the fork patch is `upstream patch * 100 + n`, n counting from 1 (upstream 1.5.1 -> 1.5.101, 1.5.2 -> 1.5.201, 2.0.0 -> 2.0.1).
+Versions: `MAJOR.MINOR` follow upstream; the fork patch is `upstream patch * 100 + n`, n counting from 1,
+written with 3 digits: upstream 1.5.1 -> 1.5.101, 1.5.2 -> 1.5.201, 2.0.0 -> 2.0.001.
+Cargo, pubspec, MSI and installer file names cannot hold leading zeros, so they carry 2.0.1; the release
+tag, the About page and the update check use 2.0.001. The updater compares the parts, not
+`get_version_number`, which reads 1.5.201 as newer than 1.6.001.
 Peers and the rendezvous server are sent `UPSTREAM_VERSION` from `src/fork.rs`, never the fork version.
 
 ## Updates in the app
