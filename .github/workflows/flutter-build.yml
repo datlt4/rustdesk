@@ -60,7 +60,10 @@ env:
   MACOS_P12_BASE64: "${{ secrets.MACOS_P12_BASE64 }}"
   UPLOAD_ARTIFACT: "${{ inputs.upload-artifact }}"
   PUBLISH_UPDATE_METADATA: "${{ inputs.publish-update-metadata }}"
-  SIGN_BASE_URL: "${{ secrets.SIGN_BASE_URL-2 }}"
+  # Fork: no signing server. Keep the "-2" suffix so an unset secret evaluates
+  # to "-2" and the signing steps below stay skipped (upstream's
+  # secrets.SIGN_BASE_URL-2 evaluates to non-"-2" here and breaks the build).
+  SIGN_BASE_URL: "${{ secrets.SIGN_BASE_URL }}-2"
 
 jobs:
   validate-update-metadata-keys:
