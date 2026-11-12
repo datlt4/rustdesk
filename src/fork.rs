@@ -14,7 +14,7 @@ pub const USER_AGENT: &str = "RustDesk";
 /// Upstream version the code is synced to; set by res/fork/set-version.sh.
 /// Peers and the rendezvous server get this instead of the fork version, since
 /// get_version_number reads 1.5.101 as 1.6.10 and peers would expect newer features.
-pub const UPSTREAM_VERSION: &str = "1.5.1";
+pub const UPSTREAM_VERSION: &str = "1.5.3";
 
 /// `mainGetCommon` keys handled by the fork; errors come back as `error:<message>`.
 pub fn get_common(key: &str) -> Option<String> {
